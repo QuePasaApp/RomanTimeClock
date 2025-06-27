@@ -1,92 +1,55 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <title>Roman Time Clock</title>
   <style>
-    body {
-      background: #800000;
-      color: white;
-      font-family: sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-    }
-    .container {
-      background: rgba(255,255,255,0.05);
-      border-radius: 10px;
-      padding: 30px 40px;
-      box-shadow: 0 0 12px #40000080;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    input, button {
-      margin: 10px 0;
-      padding: 10px;
-      border-radius: 5px;
-      border: none;
-      font-size: 1.1em;
-    }
-    button {
-      background: #b22222;
-      color: white;
-      cursor: pointer;
-      width: 200px;
-      margin-bottom: 10px;
-    }
-    h2 {
-      margin-bottom: 16px;
-    }
+    body { font-family: sans-serif; margin: 2em; }
+    label { display: block; margin: 1em 0 0.3em; }
+    input, select, button { font-size: 1.1em; }
+    #result { margin-top: 1em; font-weight: bold; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Roman Time Clock</h2>
-    <input id="name" type="text" placeholder="Employee Name" required />
-    <div>
-      <button onclick="clock('in')">Clock In</button>
-      <button onclick="clock('out')">Clock Out</button>
-    </div>
-    <p id="status"></p>
-  </div>
+  <h1>Roman Time Clock</h1>
+  <form id="timeForm" autocomplete="off">
+    <label>
+      Name:
+      <input type="text" name="name" required>
+    </label>
+    <label>
+      Action:
+      <select name="action" required>
+        <option value="Clock In">Clock In</option>
+        <option value="Clock Out">Clock Out</option>
+      </select>
+    </label>
+    <button type="submit">Submit</button>
+  </form>
+  <div id="result"></div>
+
   <script>
-    function clock(type) {
-      const name = document.getElementById('name').value.trim();
-      if (!name) {
-        alert('Please enter your name.');
-        return;
-      }
-      document.getElementById('status').innerText = 'Getting location...';
-      navigator.geolocation.getCurrentPosition(pos => {
-        const gps = pos.coords.latitude + ',' + pos.coords.longitude;
-        const now = new Date().toLocaleTimeString('en-US', { hour12: false });
-        fetch('https://script.google.com/a/macros/romanmechanical.com/s/AKfycbxVWDYg4AfgXp4pVFnGZNxNHih863FpUoCa-MqEViEWcyqHPrk0fUhu9bAJT_lXXfMv/exec', {
-          method: 'POST',
-          body: JSON.stringify({name, time: now, gps, type}),
-          headers: {'Content-Type': 'application/json'}
-        })
-        .then(response => response.text())
-        .then(res => {
-          if (res.indexOf("All clock-ins used") !== -1) {
-            document.getElementById('status').innerText = "All clock-ins used for today!";
-          } else if (res.indexOf("All clock-outs used") !== -1) {
-            document.getElementById('status').innerText = "All clock-outs used for today!";
-          } else if (res.indexOf("OK") !== -1) {
-            document.getElementById('status').innerText = 'Clocked ' + (type === 'in' ? 'IN' : 'OUT') + ' at ' + now;
-          } else {
-            document.getElementById('status').innerText = 'Error submitting clock.';
-          }
-        })
-        .catch(() => {
-          document.getElementById('status').innerText = 'Error submitting clock.';
-        });
-      }, () => {
-        document.getElementById('status').innerText = 'Location required!';
+    // CHANGE THIS TO YOUR /exec URL!
+    const scriptURL = 'YOUR_WEB_APP_URL_HERE';
+
+    document.getElementById('timeForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const form = e.target;
+      const data = new FormData(form);
+
+      fetch(scriptURL, {
+        method: 'POST',
+        body: data,
+      })
+      .then(response => response.text())
+      .then(result => {
+        document.getElementById('result').innerText = 'Submitted: ' + result;
+        form.reset();
+      })
+      .catch(error => {
+        document.getElementById('result').innerText = 'Error: ' + error;
       });
-    }
+    });
   </script>
 </body>
 </html>
