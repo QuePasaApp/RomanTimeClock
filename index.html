@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Roman Time Clock</title>
+  <style>
+    body {
+      background: #800000;
+      color: white;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+      padding: 30px 40px;
+      box-shadow: 0 0 12px #40000080;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    input, button, select {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 5px;
+      border: none;
+      font-size: 1.1em;
+    }
+    button {
+      background: #b22222;
+      color: white;
+      cursor: pointer;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    h2 {
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Roman Time Clock</h2>
+    <input id="name" type="text" placeholder="Employee Name" required />
+    <div>
+      <button onclick="clock('in1')">Clock In 1</button>
+      <button onclick="clock('out1')">Clock Out 1</button>
+      <button onclick="clock('in2')">Clock In 2</button>
+      <button onclick="clock('out2')">Clock Out 2</button>
+      <button onclick="clock('in3')">Clock In 3</button>
+      <button onclick="clock('out3')">Clock Out 3</button>
+    </div>
+    <p id="status"></p>
+  </div>
+  <script>
+    // Prevent multiple clock-ins per device per day per slot
+    const today = new Date().toISOString().substring(0,10);
+    function getKey(type) {
+      return 'clocked_' + type + '_' + today;
+    }
+
+    function clock(type) {
+      const name = document.getElementById('name').value.trim();
+      if (!name) {
+        alert('Please enter your name.');
+        return;
+      }
+      if (localStorage.getItem(getKey(type))) {
+        document.getElementById('status').innerText = 'Already clocked for this action today.';
+        return;
+      }
+      document.getElementById('status').innerText = 'Getting location...';
+      navigator.geolocation.getCurrentPosition(pos => {
+        const gps = pos.coords.latitude + ',' + pos.coords.longitude;
+        const now = new Date().toLocaleTimeString('en-US', { hour12: false });
+        fetch('YOUR_SCRIPT_URL_HERE', {
+          method: 'POST',
+          body: JSON.stringify({name, time: now, gps, type}),
+          headers: {'Content-Type': 'application/json'}
+        })
+        .then(() => {
+          localStorage.setItem(getKey(type), '1');
+          document.getElementById('status').innerText = 'Clocked ' + type.toUpperCase() + ' at ' + now;
+        })
+        .catch(() => {
+          document.getElementById('status').innerText = 'Error submitting clock.';
+        });
+      }, err => {
+        document.getElementById('status').innerText = 'Location required!';
+      });
+    }
+  </script>
+</body>
+</html>
