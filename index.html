@@ -29,13 +29,50 @@
   <div id="result"></div>
 
   <script>
-    // CHANGE THIS TO YOUR /exec URL!
-    const scriptURL = 'YOUR_WEB_APP_URL_HERE';
+    // REPLACE this with your actual web app URL:
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbxCdYvGARFeGaTC66JCV3H-NtHEUtqRltWegAtx0TzBvcXvybQrqlwNHQrvbXI6y-97xg/exec';
 
     document.getElementById('timeForm').addEventListener('submit', function(e) {
       e.preventDefault();
       const form = e.target;
-      const data = new FormData(form);
+      const name = form.name.value;
+      const action = form.action.value;
+      const now = new Date();
+      const timeString = now.toLocaleString();
+      const weekOfYear = getWeekNumber(now);
+
+      // Try to get GPS coordinates
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+          const gps = `${position.coords.latitude},${position.coords.longitude}`;
+          submitData(name, action, timeString, gps, weekOfYear);
+        }, function() {
+          submitData(name, action, timeString, 'Permission denied', weekOfYear);
+        });
+      } else {
+        submitData(name, action, timeString, 'Not supported', weekOfYear);
+      }
+    });
+
+    function submitData(name, action, time, gps, weekOfYear) {
+      // Prepare the data to match Apps Script expectations
+      const data = new FormData();
+      data.append('name', name);
+      data.append('weekOfYear', weekOfYear);
+
+      if (action === "Clock In") {
+        data.append('clockInTime', time);
+        data.append('clockInGPS', gps);
+        data.append('clockOutTime', '');
+        data.append('clockOutGPS', '');
+        data.append('totalHours', '');
+      } else {
+        data.append('clockInTime', '');
+        data.append('clockInGPS', '');
+        data.append('clockOutTime', time);
+        data.append('clockOutGPS', gps);
+        data.append('totalHours', '');
+      }
 
       fetch(scriptURL, {
         method: 'POST',
@@ -44,12 +81,21 @@
       .then(response => response.text())
       .then(result => {
         document.getElementById('result').innerText = 'Submitted: ' + result;
-        form.reset();
+        document.getElementById('timeForm').reset();
       })
       .catch(error => {
         document.getElementById('result').innerText = 'Error: ' + error;
       });
-    });
+    }
+
+    // Helper function to get week number
+    function getWeekNumber(d) {
+      d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+      d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+      const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+      return weekNo;
+    }
   </script>
 </body>
 </html>
